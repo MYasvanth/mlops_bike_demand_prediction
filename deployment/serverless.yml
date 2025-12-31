@@ -1,0 +1,42 @@
+service: bike-demand-ml-api
+
+provider:
+  name: aws
+  runtime: python3.9
+  stage: dev
+  region: us-east-1
+  environment:
+    MODEL_PATH: models/bike_demand_model.joblib
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:GetObject
+        - s3:PutObject
+      Resource: "arn:aws:s3:::bike-demand-models/*"
+
+functions:
+  predict:
+    handler: handler.predict
+    events:
+      - http:
+          path: predict
+          method: post
+          cors: true
+    timeout: 30
+    memorySize: 1024
+
+  health:
+    handler: handler.health
+    events:
+      - http:
+          path: health
+          method: get
+          cors: true
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    dockerizePip: true
+    slim: true

@@ -1,0 +1,26 @@
+plugins = []
+headers = []
+redirects = []
+
+[functions]
+
+[functions."*"]
+
+[build]
+publish = "C:\\Users\\admin\\Desktop\\Sql Project\\MLprojects\\mlops_bike_demand"
+publishOrigin = "default"
+base = "C:\\Users\\admin\\Desktop\\Sql Project\\MLprojects\\mlops_bike_demand"
+
+[build.environment]
+
+[build.processing]
+
+[build.processing.css]
+
+[build.processing.html]
+
+[build.processing.images]
+
+[build.processing.js]
+
+[build.services]

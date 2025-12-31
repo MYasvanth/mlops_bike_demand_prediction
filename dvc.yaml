@@ -1,0 +1,92 @@
+stages:
+  data_ingestion:
+    cmd: python -c "
+      import pandas as pd;
+      from pathlib import Path;
+      df = pd.read_csv('data/raw/day.csv');
+      Path('data/processed').mkdir(exist_ok=True);
+      df.to_csv('data/processed/ingested_data.csv', index=False);
+      print(f'Data ingested: {len(df)} rows')
+      "
+    deps:
+    - data/raw/day.csv
+    outs:
+    - data/processed/ingested_data.csv
+
+  data_preprocessing:
+    cmd: python -c "
+      import sys; sys.path.append('src');
+      from features.data_processor import DataProcessor;
+      from utils import load_config;
+      import pandas as pd;
+      config = load_config('configs/model_config.yaml');
+      processor = DataProcessor(config);
+      df = pd.read_csv('data/processed/ingested_data.csv');
+      processor.validate_data(df);
+      df_processed = processor.preprocess_features(df, fit=True);
+      df_processed = processor.handle_outliers(df_processed);
+      df_processed = processor.create_features(df_processed);
+      df_processed.to_csv('data/processed/preprocessed_data.csv', index=False);
+      processor.save_transformers('models/transformers');
+      print(f'Data preprocessed: {df_processed.shape}')
+      "
+    deps:
+    - data/processed/ingested_data.csv
+    - configs/model_config.yaml
+    - src/features/data_processor.py
+    outs:
+    - data/processed/preprocessed_data.csv
+    - models/transformers
+
+  model_training:
+    cmd: python -c "
+      import sys; sys.path.append('src');
+      from models.bike_demand_model import BikeDemandModel;
+      from utils import load_config;
+      import pandas as pd;
+      config = load_config('configs/model_config.yaml');
+      model = BikeDemandModel(config);
+      df = pd.read_csv('data/processed/preprocessed_data.csv');
+      df_processed = model.preprocess_data(df);
+      X_train, X_val, X_test, y_train, y_val, y_test = model.split_data(df_processed);
+      metrics = model.train(X_train, y_train, X_val, y_val);
+      model.save_model('models/bike_demand_model.joblib');
+      print(f'Model trained - MAE: {metrics.get(\"train_mae\", 0):.2f}')
+      "
+    deps:
+    - data/processed/preprocessed_data.csv
+    - configs/model_config.yaml
+    - src/models/bike_demand_model.py
+    - models/transformers
+    outs:
+    - models/bike_demand_model.joblib
+
+  model_evaluation:
+    cmd: python -c "
+      import sys; sys.path.append('src');
+      from models.bike_demand_model import BikeDemandModel;
+      from utils import load_config, save_json;
+      import pandas as pd;
+      config = load_config('configs/model_config.yaml');
+      model = BikeDemandModel(config);
+      model.load_model('models/bike_demand_model.joblib');
+      df = pd.read_csv('data/processed/preprocessed_data.csv');
+      df_processed = model.preprocess_data(df);
+      X_train, X_val, X_test, y_train, y_val, y_test = model.split_data(df_processed);
+      test_metrics = model.evaluate(X_test, y_test);
+      save_json(test_metrics, 'reports/evaluation_metrics.json');
+      print(f'Model evaluated - Test MAE: {test_metrics.get(\"mae\", 0):.2f}')
+      "
+    deps:
+    - models/bike_demand_model.joblib
+    - data/processed/preprocessed_data.csv
+    - configs/model_config.yaml
+    outs:
+    - reports/evaluation_metrics.json
+
+metrics:
+- reports/evaluation_metrics.json
+
+plots:
+- reports/figures/prediction_plot.png
+- reports/figures/residual_plot.png

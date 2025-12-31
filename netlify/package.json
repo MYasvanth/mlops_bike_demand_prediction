@@ -1,0 +1,17 @@
+{
+  "name": "bike-demand-prediction-netlify",
+  "version": "1.0.0",
+  "description": "Bike Demand Prediction API deployed on Netlify",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo 'No build step required'",
+    "deploy": "netlify deploy --prod"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "netlify-cli": "^15.0.0"
+  },
+  "keywords": ["machine-learning", "bike-demand", "prediction", "netlify", "serverless"],
+  "author": "Your Name",
+  "license": "MIT"
+}

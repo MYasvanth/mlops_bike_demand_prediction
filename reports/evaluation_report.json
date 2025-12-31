@@ -1,0 +1,43 @@
+{
+  "metrics": {
+    "mae": 58.918905429730124,
+    "mse": 6649.512178485738,
+    "rmse": 81.54454107103516,
+    "r2": 0.9980623806062019,
+    "mape": 1.5340646377317642,
+    "mpe": -0.5659857547528074,
+    "accuracy_10pct": 1.0,
+    "accuracy_20pct": 1.0,
+    "accuracy_30pct": 1.0
+  },
+  "data_info": {
+    "test_samples": 74,
+    "features": [
+      "instant",
+      "season",
+      "yr",
+      "mnth",
+      "holiday",
+      "weekday",
+      "workingday",
+      "weathersit",
+      "temp",
+      "atemp",
+      "hum",
+      "windspeed",
+      "casual",
+      "registered",
+      "year",
+      "month",
+      "day",
+      "day_of_week",
+      "temp_hum_interaction",
+      "wind_category",
+      "temp_season_adjusted"
+    ]
+  },
+  "model_info": {
+    "type": "unknown",
+    "version": "1.0.0"
+  }
+}

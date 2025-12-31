@@ -1,0 +1,94 @@
+model:
+  name: "bike_demand_rf_regressor"
+  type: "random_forest"
+  version: "1.0.0"
+
+hyperparameters:
+  n_estimators: 100
+  max_depth: null
+  min_samples_split: 2
+  min_samples_leaf: 1
+  random_state: 42
+  n_jobs: -1
+
+features:
+  numerical:
+    - "temp"
+    - "atemp"
+    - "hum"
+    - "windspeed"
+  categorical:
+    - "season"
+    - "yr"
+    - "mnth"
+    - "holiday"
+    - "weekday"
+    - "workingday"
+    - "weathersit"
+
+target: "cnt"
+
+data:
+  train_split: 0.8
+  val_split: 0.1
+  test_split: 0.1
+  random_state: 42
+
+evaluation:
+  metrics:
+    - "mae"
+    - "rmse"
+    - "r2"
+  cv_folds: 5
+
+monitoring:
+  data_quality:
+    enable_checks: true
+    missing_threshold: 0.05  # Alert if >5% missing values
+    duplicate_threshold: 0.01  # Alert if >1% duplicates
+  data_drift:
+    enable_detection: true
+    drift_threshold: 0.1  # Alert if drift score > 0.1
+    reference_data_path: "data/processed/reference_data.csv"  # Path to reference data for drift detection
+  model_performance:
+    enable_monitoring: true
+    performance_drop_threshold: 0.1  # Alert if performance drops by >10%
+    baseline_metrics_path: "models/baseline_metrics.json"  # Path to baseline metrics
+  alerting:
+    smtp_server: null  # Set to SMTP server for email alerts
+    smtp_port: 587
+    sender_email: null  # Set to sender email
+    sender_password: null  # Set to sender password
+    recipient_emails: []  # List of recipient emails
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+explainability:
+  enabled: true
+  shap:
+    max_evals: 1000
+  lime:
+    num_features: 10
+    num_samples: 1000
+
+security:
+  jwt:
+    secret_key: "your-secret-key-change-in-production"  # Change this in production
+    algorithm: "HS256"
+    access_token_expire_minutes: 30
+  rate_limiting:
+    requests_per_minute: 60
+    burst_limit: 10
+  input_validation:
+    temp_range: [0.0, 50.0]  # Celsius
+    hum_range: [0.0, 100.0]  # Percentage
+    windspeed_range: [0.0, 67.0]  # km/h
+    season_range: [1, 4]
+    yr_range: [0, 1]
+    mnth_range: [1, 12]
+    holiday_range: [0, 1]
+    weekday_range: [0, 6]
+    workingday_range: [0, 1]
+    weathersit_range: [1, 4]
