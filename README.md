@@ -146,14 +146,6 @@ Deployment configurations are stored in the `deployment/` directory. Supports:
 - Docker containerization
 - Cloud deployment (AWS/GCP/Azure)
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make changes with comprehensive tests
-4. Ensure all tests pass
-5. Submit a pull request
-
 ## License
 
 This project is licensed under the MIT License
