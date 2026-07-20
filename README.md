@@ -60,30 +60,6 @@ mlops_bike_demand/
 └── README.md
 ```
 
-## Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd mlops_bike_demand
-```
-
-2. Create and activate virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-4. Initialize DVC:
-```bash
-dvc init
-```
-
 ## Usage
 
 ### Running the Pipeline
@@ -170,14 +146,6 @@ Deployment configurations are stored in the `deployment/` directory. Supports:
 - Docker containerization
 - Cloud deployment (AWS/GCP/Azure)
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make changes with comprehensive tests
-4. Ensure all tests pass
-5. Submit a pull request
-
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
