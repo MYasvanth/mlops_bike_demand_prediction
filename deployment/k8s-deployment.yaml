@@ -1,7 +1,62 @@
+# ── Namespace ────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bike-demand
+  labels:
+    app: bike-demand-api
+
+---
+# ── Secret (API keys / AWS credentials) ──────────────────────────────────────
+apiVersion: v1
+kind: Secret
+metadata:
+  name: api-secrets
+  namespace: bike-demand
+type: Opaque
+stringData:
+  MLFLOW_TRACKING_URI: "http://mlflow-service:5000"
+  AWS_REGION: "us-east-1"
+  # Add real values before deploying:
+  # AWS_ACCESS_KEY_ID: "<access_key>"
+  # AWS_SECRET_ACCESS_KEY: "<secret_key>"
+
+---
+# ── ConfigMap ─────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+  namespace: bike-demand
+data:
+  config.yaml: |
+    model:
+      path: /app/models/bike_demand_model.joblib
+    monitoring:
+      enabled: true
+      metrics_endpoint: /metrics
+
+---
+# ── PersistentVolumeClaim ─────────────────────────────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-pvc
+  namespace: bike-demand
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+# ── Deployment ────────────────────────────────────────────────────────────────
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: bike-demand-api
+  namespace: bike-demand
   labels:
     app: bike-demand-api
 spec:
@@ -21,7 +76,15 @@ spec:
         - containerPort: 8000
         env:
         - name: MLFLOW_TRACKING_URI
-          value: "http://mlflow-service:5000"
+          valueFrom:
+            secretKeyRef:
+              name: api-secrets
+              key: MLFLOW_TRACKING_URI
+        - name: AWS_REGION
+          valueFrom:
+            secretKeyRef:
+              name: api-secrets
+              key: AWS_REGION
         resources:
           requests:
             memory: "512Mi"
@@ -35,25 +98,35 @@ spec:
             port: 8000
           initialDelaySeconds: 30
           periodSeconds: 10
+          failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /health
             port: 8000
           initialDelaySeconds: 5
           periodSeconds: 5
+          failureThreshold: 3
         volumeMounts:
         - name: model-storage
           mountPath: /app/models
+        - name: api-config-volume
+          mountPath: /app/configs/config.yaml
+          subPath: config.yaml
       volumes:
       - name: model-storage
         persistentVolumeClaim:
           claimName: model-pvc
+      - name: api-config-volume
+        configMap:
+          name: api-config
 
 ---
+# ── Service ───────────────────────────────────────────────────────────────────
 apiVersion: v1
 kind: Service
 metadata:
   name: bike-demand-api-service
+  namespace: bike-demand
 spec:
   selector:
     app: bike-demand-api
@@ -63,27 +136,52 @@ spec:
   type: LoadBalancer
 
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
+# ── HorizontalPodAutoscaler ───────────────────────────────────────────────────
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
 metadata:
-  name: model-pvc
+  name: bike-demand-api-hpa
+  namespace: bike-demand
 spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Gi
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: bike-demand-api
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
 
 ---
+# ── Ingress (with TLS) ────────────────────────────────────────────────────────
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: bike-demand-api-ingress
+  namespace: bike-demand
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - api.bike-demand.example.com   # replace with your real domain
+    secretName: bike-demand-tls
   rules:
-  - host: api.bike-demand.example.com
+  - host: api.bike-demand.example.com   # replace with your real domain
     http:
       paths:
       - path: /
@@ -93,16 +191,3 @@ spec:
             name: bike-demand-api-service
             port:
               number: 80
-
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: api-config
-data:
-  config.yaml: |
-    model:
-      path: /app/models/bike_demand_model.joblib
-    monitoring:
-      enabled: true
-      metrics_endpoint: /metrics
